@@ -703,23 +703,43 @@
 
     function saveAsImage() {
       const card = document.getElementById("captureArea");
+      const title = card.querySelector("h1");
+      const signature = card.querySelector(".footer");
 
       // Temporarily swap the glassy, blurred look for a solid, rich background
       // so html2canvas (which can't render backdrop-filter) doesn't produce
       // a washed-out grey capture. Reverted immediately after the image is made.
       card.classList.add("capturing");
 
+      // html2canvas also cannot render CSS text-gradients (background-clip: text),
+      // which renders the title and signature as solid blank blocks. Temporarily
+      // swap them to solid white text just for the capture, then restore.
+      const titleOriginalStyle = title.style.cssText;
+      const signatureOriginalStyle = signature.style.cssText;
+
+      [title, signature].forEach(el => {
+        el.style.background = "none";
+        el.style.backgroundClip = "initial";
+        el.style.webkitBackgroundClip = "initial";
+        el.style.color = "#ffffff";
+      });
+
       html2canvas(card, {
         backgroundColor: "#13091e",
         scale: Math.min(window.devicePixelRatio || 2, 3),
         useCORS: true
       }).then(canvas => {
+        title.style.cssText = titleOriginalStyle;
+        signature.style.cssText = signatureOriginalStyle;
         card.classList.remove("capturing");
+
         let link = document.createElement("a");
         link.download = "gpa_result.png";
         link.href = canvas.toDataURL();
         link.click();
       }).catch(() => {
+        title.style.cssText = titleOriginalStyle;
+        signature.style.cssText = signatureOriginalStyle;
         card.classList.remove("capturing");
       });
     }

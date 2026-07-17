@@ -87,6 +87,19 @@
       0 0 90px 12px rgba(60,98,201,0.28);
   }
 
+  /* Used only for the instant of html2canvas capture: swaps the glassy,
+     transparent look for a solid, rich background so the exported PNG
+     is vibrant instead of a washed-out grey. */
+  .container.capturing{
+    background:linear-gradient(160deg, #1e112a, #13091e) !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    box-shadow:
+      0 25px 60px rgba(0,0,0,0.55),
+      0 0 45px 6px rgba(155,109,214,0.45),
+      0 0 90px 12px rgba(60,98,201,0.28) !important;
+  }
+
   h1{
     font-family:var(--font-display);
     font-weight:800;
@@ -607,59 +620,23 @@
       start();
     })();
 
-    // ---------- Gender-aware motivational messages ----------
-    const maleNames = ["احمد","أحمد","محمد","مُحمد","علي","عليّ","عمر","خالد","يوسف","ابراهيم","إبراهيم",
-      "حسن","حسين","عبدالله","عبد الله","عبدالرحمن","عبد الرحمن","طارق","كريم","مصطفى","محمود",
-      "سامي","وليد","ياسر","أيمن","هشام","زياد","فادي","مازن","باسل","رامي","معاذ","سيف",
-      "فيصل","سلطان","بندر","ماجد","نبيل","جمال","سامر","شادي","تامر","وائل","إياد","رضا",
-      "أنس","انس","عادل","سعيد","صالح","نايف","تركي","بدر","فهد","ناصر","جابر","عثمان",
-      "بلال","حمزة","يحيى","إسماعيل","اسماعيل","كمال","رائد","رشيد","أسامة","اسامة"];
-
-    const femaleNames = ["فاطمة","فاطمه","مريم","سارة","ساره","عائشة","عايشة","خديجة","خديجه","زينب",
-      "ليلى","هدى","امل","أمل","رنا","دينا","ياسمين","منى","سلمى","ريم","دانا","جنى","لينا",
-      "رهف","شهد","جود","لمى","ملك","تالا","جوري","رغد","سمر","هبة","هبه","بتول","اية","آية",
-      "اسراء","إسراء","دعاء","رحاب","غادة","غاده","وفاء","نجلاء","سناء","فرح","لجين","نورهان",
-      "روان","تسنيم","رزان","بيان","دانية","دانيه","جيهان","سلوى","نادين","ديما","ياسمين"];
-
-    const unisexNames = ["نور","وسام","عصمت","حياة","حياه","كرم","سلام","أمان","امان","عهد",
-      "رفيف","إخلاص","اخلاص","إيمان","ايمان","علاء","عصام"];
-
-    function normalizeArabic(str){
-      return str
-        .trim()
-        .replace(/[\u064B-\u065F\u0670]/g, "") // strip tashkeel/diacritics
-        .replace(/[إأآا]/g, "ا")
-        .replace(/ة/g, "ه");
+    // ---------- Smart, GPA-tiered motivational messages (gender-neutral) ----------
+    function gpaTier(gpa){
+      if (gpa >= 3.3) return "excellent";   // A+, A, B+
+      if (gpa >= 2.0) return "good";        // B, B-, C+, C
+      if (gpa >= 1.0) return "pass";        // C-, D+, D
+      return "fail";                        // F
     }
 
-    function buildLookup(list){
-      const set = new Set();
-      list.forEach(n => set.add(normalizeArabic(n)));
-      return set;
-    }
+    const motivationMessages = {
+      excellent: (name) => `هذا الإنجاز الاستثنائي ليس مجرد رقم يا ${name}، بل هو انعكاس حقيقي لشغف لا ينطفئ وعزيمة تتحدى الصعاب. فخورون جداً بهذه الانطلاقة العظيمة نحو قمة النجاح!`,
+      good: (name) => `خطوة رائعة ومجهود يستحق كل التقدير يا ${name}! ما زال الطريق يفتح ذراعيه للمزيد، وأنت تمتلك كل الأدوات والقدرة للوصول إلى أعلى القمم في المرة القادمة.`,
+      pass: (name) => `الدرجات لا تحدد سقف قدراتك يا ${name}. هذه المرحلة هي بداية الأساس، وبإصرارك وعملك الدؤوب ستصنع منعطفاً مذهلاً وتثبت للجميع قوتك الحقيقية.`,
+      fail: (name) => `كل عثرة هي بداية لقصة صعود ملهمة يا ${name}. النجاح لا يُقاس بعدم السقوط، بل بالقدرة على الوقوف مجدداً بقوة وإصرار أكبر. نحن نؤمن بجهدك القادم!`
+    };
 
-    const maleSet = buildLookup(maleNames);
-    const femaleSet = buildLookup(femaleNames);
-    const unisexSet = buildLookup(unisexNames);
-
-    function detectGender(rawName){
-      const firstToken = rawName.trim().split(/\s+/)[0] || "";
-      const key = normalizeArabic(firstToken);
-      if (!key) return null;
-      if (unisexSet.has(key)) return "neutral";
-      if (maleSet.has(key)) return "male";
-      if (femaleSet.has(key)) return "female";
-      return "neutral";
-    }
-
-    function motivationMessage(name, gender){
-      if (gender === "male"){
-        return `يا ${name}، أنت لست مجرد رقم في معادلة... أنت صانع مستقبل! هذا التقدير انعكاسٌ لجهدك، فاجعله وقودًا يدفعك نحو قممٍ أعلى. المستقبل ملكٌ للطموحين أمثالك.`;
-      }
-      if (gender === "female"){
-        return `يا ${name}، أنتِ لست مجرد رقم في معادلة... أنتِ صانعة مستقبل! هذا التقدير انعكاسٌ لجهدك، فاجعليه وقودًا يدفعك نحو قممٍ أعلى. المستقبل ملكٌ للطموحات أمثالكِ.`;
-      }
-      return `لا يمكن لأي تقدير أن يختصر الإمكانيات الحقيقية لـ ${name}. كل رقم هو مجرد محطة في رحلة أطول نحو التميز، والطريق إلى القمة يُبنى بالإصرار والعمل الدؤوب. المستقبل ينتظر أصحاب الطموح!`;
+    function motivationMessage(name, tier){
+      return motivationMessages[tier](name);
     }
 
     // ---------- Original GPA logic (unchanged) ----------
@@ -706,8 +683,8 @@
       // ---- Optional name-based motivational message ----
       const nameRaw = document.getElementById("nameInput").value.trim();
       if (nameRaw){
-        const gender = detectGender(nameRaw);
-        const message = motivationMessage(nameRaw, gender);
+        const tier = gpaTier(gpa);
+        const message = motivationMessage(nameRaw, tier);
         motivationBox.innerHTML = `
           <div class="motivation">
             <p>${message}</p>
@@ -725,14 +702,28 @@
     }
 
     function saveAsImage() {
-      html2canvas(document.getElementById("captureArea")).then(canvas => {
+      const card = document.getElementById("captureArea");
+
+      // Temporarily swap the glassy, blurred look for a solid, rich background
+      // so html2canvas (which can't render backdrop-filter) doesn't produce
+      // a washed-out grey capture. Reverted immediately after the image is made.
+      card.classList.add("capturing");
+
+      html2canvas(card, {
+        backgroundColor: "#13091e",
+        scale: Math.min(window.devicePixelRatio || 2, 3),
+        useCORS: true
+      }).then(canvas => {
+        card.classList.remove("capturing");
         let link = document.createElement("a");
         link.download = "gpa_result.png";
         link.href = canvas.toDataURL();
         link.click();
+      }).catch(() => {
+        card.classList.remove("capturing");
       });
     }
   </script>
 
 </body>
-</html>ر
+</html>

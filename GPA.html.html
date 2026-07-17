@@ -87,12 +87,43 @@
       0 0 90px 12px rgba(60,98,201,0.28);
   }
 
+  /* Used only for the instant of html2canvas capture: swaps the glassy,
+     transparent look for a solid, rich background so the exported PNG
+     is vibrant instead of a washed-out grey. */
+  .container.capturing{
+    background:linear-gradient(160deg, #1e112a, #13091e) !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    box-shadow:
+      0 25px 60px rgba(0,0,0,0.55),
+      0 0 45px 6px rgba(155,109,214,0.45),
+      0 0 90px 12px rgba(60,98,201,0.28) !important;
+  }
+
+  /* html2canvas cannot render background-clip:text / gradient text-fill,
+     which otherwise shows the title and signature as blank/clipped blocks
+     in the exported PNG. Force solid, visible text just for the capture. */
+  .container.capturing h1,
+  .container.capturing .footer{
+    background:none !important;
+    -webkit-background-clip:initial !important;
+    background-clip:initial !important;
+    -webkit-text-fill-color:#ffffff !important;
+    color:#ffffff !important;
+    text-shadow:none !important;
+    animation:none !important;
+    /* Forces connected Arabic script inside html2canvas */
+    letter-spacing: normal !important;
+    word-spacing: normal !important;
+  }
+
   h1{
     font-family:var(--font-display);
     font-weight:800;
     font-size:22px;
     margin:0 0 26px;
-    letter-spacing:0.3px;
+    /* Fixed: Removed 0.3px letter spacing that broken the entire title in Arabic */
+    letter-spacing: normal;
     background:linear-gradient(90deg, var(--white), var(--lavender-soft));
     -webkit-background-clip:text;
     background-clip:text;
@@ -725,11 +756,25 @@
     }
 
     function saveAsImage() {
-      html2canvas(document.getElementById("captureArea")).then(canvas => {
+      const container = document.getElementById("captureArea");
+      // Add the styling fix class before taking a screenshot to prevent washed out grey colors
+      container.classList.add("capturing");
+
+      html2canvas(container, {
+        useCORS: true,
+        allowTaint: true,
+        scale: 2 // Keeps the exported image crisp and high resolution
+      }).then(canvas => {
         let link = document.createElement("a");
         link.download = "gpa_result.png";
-        link.href = canvas.toDataURL();
+        link.href = canvas.toDataURL("image/png");
         link.click();
+        
+        // Instantly remove capturing class so UI returns to normal interactive glassmorphism
+        container.classList.remove("capturing");
+      }).catch(err => {
+        console.error("Oops, screenshot failed:", err);
+        container.classList.remove("capturing");
       });
     }
   </script>

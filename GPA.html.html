@@ -100,6 +100,20 @@
       0 0 90px 12px rgba(60,98,201,0.28) !important;
   }
 
+  /* html2canvas cannot render background-clip:text / gradient text-fill,
+     which otherwise shows the title and signature as blank/clipped blocks
+     in the exported PNG. Force solid, visible text just for the capture. */
+  .container.capturing h1,
+  .container.capturing .footer{
+    background:none !important;
+    -webkit-background-clip:initial !important;
+    background-clip:initial !important;
+    -webkit-text-fill-color:#ffffff !important;
+    color:#ffffff !important;
+    text-shadow:none !important;
+    animation:none !important;
+  }
+
   h1{
     font-family:var(--font-display);
     font-weight:800;
@@ -630,7 +644,7 @@
 
     const motivationMessages = {
       excellent: (name) => `هذا الإنجاز الاستثنائي ليس مجرد رقم يا ${name}، بل هو انعكاس حقيقي لشغف لا ينطفئ وعزيمة تتحدى الصعاب. فخورون جداً بهذه الانطلاقة العظيمة نحو قمة النجاح!`,
-      good: (name) => `خطوة رائعة ومجهود يستحق كل التقدير يا ${name}! ما زال الطريق يفتح ذراعيه للمزيد، وأنت تمتلك كل الأدوات والقدرة للوصول إلى أعلى القمم في المرة القادمة.`,
+      good: (name) => `هذا المستوى المتميز يا ${name} يعكس مجهوداً حقيقياً وثباتاً يستحق كل الفخر والتقدير. إنجاز يليق بك تماماً، ويُضاف بكل استحقاق إلى سجل نجاحاتك المشرقة!`,
       pass: (name) => `الدرجات لا تحدد سقف قدراتك يا ${name}. هذه المرحلة هي بداية الأساس، وبإصرارك وعملك الدؤوب ستصنع منعطفاً مذهلاً وتثبت للجميع قوتك الحقيقية.`,
       fail: (name) => `كل عثرة هي بداية لقصة صعود ملهمة يا ${name}. النجاح لا يُقاس بعدم السقوط، بل بالقدرة على الوقوف مجدداً بقوة وإصرار أكبر. نحن نؤمن بجهدك القادم!`
     };
@@ -703,34 +717,18 @@
 
     function saveAsImage() {
       const card = document.getElementById("captureArea");
-      const title = card.querySelector("h1");
-      const signature = card.querySelector(".footer");
 
-      // Temporarily swap the glassy, blurred look for a solid, rich background
-      // so html2canvas (which can't render backdrop-filter) doesn't produce
-      // a washed-out grey capture. Reverted immediately after the image is made.
+      // Toggling this single class swaps the glassy background for a solid
+      // one AND forces the gradient title/signature to solid white text
+      // (see .container.capturing rules in the CSS) so html2canvas produces
+      // a clean, vibrant capture instead of grey blocks or clipped text.
       card.classList.add("capturing");
-
-      // html2canvas also cannot render CSS text-gradients (background-clip: text),
-      // which renders the title and signature as solid blank blocks. Temporarily
-      // swap them to solid white text just for the capture, then restore.
-      const titleOriginalStyle = title.style.cssText;
-      const signatureOriginalStyle = signature.style.cssText;
-
-      [title, signature].forEach(el => {
-        el.style.background = "none";
-        el.style.backgroundClip = "initial";
-        el.style.webkitBackgroundClip = "initial";
-        el.style.color = "#ffffff";
-      });
 
       html2canvas(card, {
         backgroundColor: "#13091e",
         scale: Math.min(window.devicePixelRatio || 2, 3),
         useCORS: true
       }).then(canvas => {
-        title.style.cssText = titleOriginalStyle;
-        signature.style.cssText = signatureOriginalStyle;
         card.classList.remove("capturing");
 
         let link = document.createElement("a");
@@ -738,8 +736,6 @@
         link.href = canvas.toDataURL();
         link.click();
       }).catch(() => {
-        title.style.cssText = titleOriginalStyle;
-        signature.style.cssText = signatureOriginalStyle;
         card.classList.remove("capturing");
       });
     }
